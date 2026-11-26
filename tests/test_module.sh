@@ -67,7 +67,9 @@ grep -q "SETPROP persist.vivo.camerap3.support=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.support.appshare=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.feature.super_performance_support=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.multiwindow_force=true" "$TMP/ctl.log"
-grep -q "SETPROP persist.vivo.usb_wet_charge_limit_support=1" "$TMP/ctl.log"
+! grep -q "usb_wet_charge_limit_support" "$TMP/ctl.log"
+! grep -q "gamecube.hifi.support" "$TMP/ctl.log"
+grep -q "SETPROP persist.sys.dcdiming.en.vivo=1" "$TMP/ctl.log"
 
 # Test B: disabling refresh_144_custom safely restores fps_max=120 (not empty)
 : > "$TMP/ctl.log"
@@ -101,7 +103,7 @@ fi
 
 # 4. Verify build.sh produces valid flashable ZIP with webroot/index.html
 bash "$ROOT/build.sh" >/dev/null
-ZIP="$ROOT/dist/OriginOS5_Hidden_Features_v2.0.zip"
+ZIP="$ROOT/dist/OriginOS5_Hidden_Features_v2.0.1.zip"
 [ -f "$ZIP" ]
 unzip -l "$ZIP" | grep -q "META-INF/com/google/android/update-binary"
 unzip -l "$ZIP" | grep -q "webroot/index.html"

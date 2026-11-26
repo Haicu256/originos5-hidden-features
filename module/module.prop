@@ -1,6 +1,6 @@
 id=originos5_hidden_features
 name=OriginOS 5 Hidden Features Unlock
-version=v2.0
-versionCode=200
+version=v2.0.1
+versionCode=201
 author=Haicu256
-description=Mở khóa 12 nhóm tính năng ẩn chạy thật trên OriginOS 5 (Android 15) kèm WebUI bật/tắt trực tiếp: 144Hz & Hz từng app, Cảm ứng Game chuyên sâu, Giới hạn % sạc & Sạc nhánh, Full AOD, DC Dimming, 5 mức thu phóng, Camera TWS/P3, Chia đôi mọi app, Extreme Mode. Không daemon, không mount /vendor.
+description=Mở khóa 11 nhóm tính năng ẩn 100% có phần cứng hỗ trợ trên OriginOS 5 (Android 15) kèm WebUI bật/tắt trực tiếp: 144Hz & Hz từng app, Cảm ứng Game chuyên sâu, Giới hạn % sạc & Sạc nhánh, Full AOD, DC Dimming, 5 mức thu phóng, Camera TWS/P3, Chia đôi mọi app, Extreme Mode. Không daemon, không mount /vendor.

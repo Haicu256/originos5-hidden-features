@@ -3,7 +3,7 @@
 # Works with KernelSU (late-load & post-fs-data), SukiSU, APatch, Magisk, and KSU WebUI.
 
 CONF="${O5_CONF_FILE:-/data/adb/originos5_hidden_features.conf}"
-ALL_KEYS="charge_limit bypass_charge usb_wet_guard refresh_144_custom full_aod dc_dimming five_level_zoom game_pro camera_pro low_latency_audio multiwindow_pro app_share_extreme"
+ALL_KEYS="charge_limit bypass_charge refresh_144_custom full_aod dc_dimming five_level_zoom game_pro camera_pro low_latency_audio multiwindow_pro app_share_extreme"
 
 run_resetprop() {
   if [ -n "${O5_RESETPROP_BIN:-}" ] && [ -x "$O5_RESETPROP_BIN" ]; then
@@ -137,13 +137,6 @@ apply_one() {
         run_setprop persist.vivo.disable_charge_support ""
       fi
       ;;
-    usb_wet_guard)
-      if [ "$val" = "1" ]; then
-        run_setprop persist.vivo.usb_wet_charge_limit_support 1
-      else
-        run_setprop persist.vivo.usb_wet_charge_limit_support ""
-      fi
-      ;;
     refresh_144_custom)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.phone.fps_max 144
@@ -184,10 +177,8 @@ apply_one() {
     game_pro)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.support.picture_stability_opt true
-        run_setprop persist.vivo.gamecube.hifi.support 1
       else
         run_setprop persist.vivo.support.picture_stability_opt ""
-        run_setprop persist.vivo.gamecube.hifi.support ""
       fi
       apply_one_ro "$key" "$val"
       ;;

@@ -164,10 +164,7 @@
           prop: "persist.vivo.charge_capacity_up_limit_support=1" },
         { key: "bypass_charge", name: "Sạc nhánh toàn cục & Ngắt sạc", sr: false,
           desc: "Mở hỗ trợ cấp nguồn trực tiếp không qua pin và tùy chọn ngắt sạc.",
-          prop: "persist.vivo.all_bypass_charge_support=1, disable_charge_support=1" },
-        { key: "usb_wet_guard", name: "Cảnh báo bảo vệ cổng USB ẩm", sr: false,
-          desc: "Kích hoạt dịch vụ cảnh báo và giới hạn sạc khi phát hiện cổng sạc ẩm.",
-          prop: "persist.vivo.usb_wet_charge_limit_support=1" }
+          prop: "persist.vivo.all_bypass_charge_support=1, disable_charge_support=1" }
       ]
     },
     {
@@ -190,9 +187,9 @@
     {
       title: "Game Space, Camera & Âm thanh",
       items: [
-        { key: "game_pro", name: "Cảm ứng Game chuyên sâu, Ổn định ảnh & Hi-Fi", sr: true,
-          desc: "Mở thanh trượt chỉnh độ nhạy vuốt/chạm (node /sys/touchscreen/game_para_adjust), ổn định khung hình và Game Hi-Fi.",
-          prop: "ro.vivo.touch.game_para_adjust=1, picture_stability_opt=true, gamecube.hifi=1" },
+        { key: "game_pro", name: "Cảm ứng Game chuyên sâu & Ổn định ảnh", sr: true,
+          desc: "Mở thanh trượt chỉnh độ nhạy vuốt/chạm (node /sys/touchscreen/game_para_adjust) và ổn định khung hình trong Game Space.",
+          prop: "ro.vivo.touch.game_para_adjust=1, picture_stability_opt=true" },
         { key: "camera_pro", name: "Thu âm mic Bluetooth TWS & Ảnh Display P3", sr: false,
           desc: "Dùng tai nghe TWS làm mic quay video trong Camera gốc và lưu ảnh dải màu rộng P3.",
           prop: "persist.vivo.Lea.tws_recording.enable=true, persist.vivo.camerap3.support=1" },
@@ -339,7 +336,7 @@
         else if (k === "LIVE_DC_DIM") dc = v === "1" ? "Bật" : "Tắt";
         else if (k.startsWith("FEAT_")) state[k.slice(5)] = v;
       });
-      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.0";
+      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.0.1";
       document.getElementById("pFps").textContent = fps;
       document.getElementById("pChg").textContent = chg;
       document.getElementById("pDc").textContent = dc;
@@ -374,7 +371,7 @@
     try {
       await execRoot("sh " + CTL + " enable_all");
       await refreshStatus(true);
-      showToast("Đã bật toàn bộ 12 nhóm tính năng!");
+      showToast("Đã bật toàn bộ 11 nhóm tính năng!");
     } catch (e) {
       showToast("Lỗi: " + e.message);
       setBusy(false);
