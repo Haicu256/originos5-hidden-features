@@ -1,9 +1,10 @@
 #!/system/bin/sh
-# OriginOS 5 Hidden Features Unlock — Single-source-of-truth feature controller
-# Works with KernelSU (late-load & post-fs-data), SukiSU, APatch, Magisk, and KSU WebUI.
+# OriginOS 5 Hidden Features Unlock — Single-source-of-truth feature controller (v2.1.0)
+# 19 independent hardware-verified toggles. Works with KernelSU, SukiSU, APatch, Magisk, and KSU WebUI.
 
 CONF="${O5_CONF_FILE:-/data/adb/originos5_hidden_features.conf}"
-ALL_KEYS="charge_limit bypass_charge refresh_144_custom full_aod dc_dimming five_level_zoom game_pro camera_pro low_latency_audio multiwindow_pro app_share_extreme"
+ALL_KEYS="charge_limit bypass_charge disable_charge fps_144 per_app_hz full_aod aod_music dc_dimming five_level_zoom game_touch_pro game_pic_stability camera_tws_mic camera_p3 low_latency_audio airpods_support multiwindow_force multiwindow_anim app_share extreme_perf"
+RO_KEYS="fps_144 per_app_hz full_aod game_touch_pro airpods_support"
 
 run_resetprop() {
   if [ -n "${O5_RESETPROP_BIN:-}" ] && [ -x "$O5_RESETPROP_BIN" ]; then
@@ -35,6 +36,20 @@ run_settings() {
   settings put "$@" 2>/dev/null || true
 }
 
+legacy_parent_of() {
+  case "$1" in
+    disable_charge) echo "bypass_charge" ;;
+    fps_144|per_app_hz) echo "refresh_144_custom" ;;
+    aod_music) echo "full_aod" ;;
+    game_touch_pro|game_pic_stability) echo "game_pro" ;;
+    camera_tws_mic|camera_p3) echo "camera_pro" ;;
+    airpods_support) echo "low_latency_audio" ;;
+    multiwindow_force|multiwindow_anim) echo "multiwindow_pro" ;;
+    app_share|extreme_perf) echo "app_share_extreme" ;;
+    *) echo "" ;;
+  esac
+}
+
 ensure_conf() {
   if [ ! -f "$CONF" ]; then
     mkdir -p "$(dirname "$CONF")" 2>/dev/null || true
@@ -43,12 +58,25 @@ ensure_conf() {
       echo "${_ek}=1" >> "$CONF"
     done
   else
-    # Add any newly introduced keys (upgrade compatibility)
+    _migrated=0
     for _ek in $ALL_KEYS; do
       if ! grep -q "^${_ek}=" "$CONF" 2>/dev/null; then
-        echo "${_ek}=1" >> "$CONF"
+        _def="1"
+        _lp=$(legacy_parent_of "$_ek")
+        if [ -n "$_lp" ]; then
+          _lv=$(grep "^${_lp}=" "$CONF" 2>/dev/null | tail -n 1 | cut -d= -f2)
+          [ "$_lv" = "0" ] && _def="0"
+        fi
+        echo "${_ek}=${_def}" >> "$CONF"
+        _migrated=1
       fi
     done
+    # Remove obsolete v2.0 grouped keys after migration
+    if [ "$_migrated" = "1" ] || grep -Eq '^(refresh_144_custom|game_pro|camera_pro|multiwindow_pro|app_share_extreme|usb_wet_guard)=' "$CONF" 2>/dev/null; then
+      _mtmp="${CONF}.mig.$$"
+      grep -Ev '^(refresh_144_custom|game_pro|camera_pro|multiwindow_pro|app_share_extreme|usb_wet_guard)=' "$CONF" 2>/dev/null > "$_mtmp" || true
+      mv "$_mtmp" "$CONF"
+    fi
   fi
 }
 
@@ -83,13 +111,18 @@ apply_one_ro() {
   key="$1"
   val="$2"
   case "$key" in
-    refresh_144_custom)
+    fps_144)
       if [ "$val" = "1" ]; then
-        run_resetprop ro.vivo.user_refresh_rate_mode true
         run_resetprop ro.surface_flinger.game_default_frame_rate_override 144
       else
-        run_resetprop ro.vivo.user_refresh_rate_mode false
         run_resetprop ro.surface_flinger.game_default_frame_rate_override 60
+      fi
+      ;;
+    per_app_hz)
+      if [ "$val" = "1" ]; then
+        run_resetprop ro.vivo.user_refresh_rate_mode true
+      else
+        run_resetprop ro.vivo.user_refresh_rate_mode false
       fi
       ;;
     full_aod)
@@ -99,14 +132,14 @@ apply_one_ro() {
         run_resetprop ro.vivo.keyguard_full_aod.enable 0
       fi
       ;;
-    game_pro)
+    game_touch_pro)
       if [ "$val" = "1" ]; then
         run_resetprop ro.vivo.touch.game_para_adjust 1
       else
         run_resetprop ro.vivo.touch.game_para_adjust 0
       fi
       ;;
-    low_latency_audio)
+    airpods_support)
       if [ "$val" = "1" ]; then
         run_resetprop ro.vivo.support.airpods true
       else
@@ -131,13 +164,18 @@ apply_one() {
     bypass_charge)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.all_bypass_charge_support 1
-        run_setprop persist.vivo.disable_charge_support 1
       else
         run_setprop persist.vivo.all_bypass_charge_support ""
+      fi
+      ;;
+    disable_charge)
+      if [ "$val" = "1" ]; then
+        run_setprop persist.vivo.disable_charge_support 1
+      else
         run_setprop persist.vivo.disable_charge_support ""
       fi
       ;;
-    refresh_144_custom)
+    fps_144)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.phone.fps_max 144
         run_setprop persist.graphics.game_default_frame_rate.disabled true
@@ -147,17 +185,25 @@ apply_one() {
       fi
       apply_one_ro "$key" "$val"
       ;;
+    per_app_hz)
+      apply_one_ro "$key" "$val"
+      ;;
     full_aod)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.phone.smart_aod 1
         run_settings secure vivo_integration_aod_enable 1
-        run_settings secure aod_show_music_switch 1
       else
         run_setprop persist.vivo.phone.smart_aod ""
         run_settings secure vivo_integration_aod_enable 0
-        run_settings secure aod_show_music_switch 0
       fi
       apply_one_ro "$key" "$val"
+      ;;
+    aod_music)
+      if [ "$val" = "1" ]; then
+        run_settings secure aod_show_music_switch 1
+      else
+        run_settings secure aod_show_music_switch 0
+      fi
       ;;
     dc_dimming)
       if [ "$val" = "1" ]; then
@@ -174,20 +220,27 @@ apply_one() {
         run_setprop persist.vivo.support.five_level_screen_zoom ""
       fi
       ;;
-    game_pro)
+    game_touch_pro)
+      apply_one_ro "$key" "$val"
+      ;;
+    game_pic_stability)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.support.picture_stability_opt true
       else
         run_setprop persist.vivo.support.picture_stability_opt ""
       fi
-      apply_one_ro "$key" "$val"
       ;;
-    camera_pro)
+    camera_tws_mic)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.Lea.tws_recording.enable true
-        run_setprop persist.vivo.camerap3.support 1
       else
         run_setprop persist.vivo.Lea.tws_recording.enable false
+      fi
+      ;;
+    camera_p3)
+      if [ "$val" = "1" ]; then
+        run_setprop persist.vivo.camerap3.support 1
+      else
         run_setprop persist.vivo.camerap3.support ""
       fi
       ;;
@@ -197,27 +250,39 @@ apply_one() {
       else
         run_setprop persist.vivo.audio.feature.uselowlatency.enable false
       fi
+      ;;
+    airpods_support)
       apply_one_ro "$key" "$val"
       ;;
-    multiwindow_pro)
+    multiwindow_force)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.multiwindow_force true
         run_setprop persist.vivo.multiwindow_rotatevalid true
-        run_setprop persist.vivo.multiwindow_split_switch_anim 1
-        run_setprop persist.vivo.multiwindow_splittofull_anim 1
       else
         run_setprop persist.vivo.multiwindow_force ""
         run_setprop persist.vivo.multiwindow_rotatevalid ""
+      fi
+      ;;
+    multiwindow_anim)
+      if [ "$val" = "1" ]; then
+        run_setprop persist.vivo.multiwindow_split_switch_anim 1
+        run_setprop persist.vivo.multiwindow_splittofull_anim 1
+      else
         run_setprop persist.vivo.multiwindow_split_switch_anim ""
         run_setprop persist.vivo.multiwindow_splittofull_anim ""
       fi
       ;;
-    app_share_extreme)
+    app_share)
       if [ "$val" = "1" ]; then
         run_setprop persist.vivo.support.appshare 1
-        run_setprop persist.vivo.feature.super_performance_support 1
       else
         run_setprop persist.vivo.support.appshare ""
+      fi
+      ;;
+    extreme_perf)
+      if [ "$val" = "1" ]; then
+        run_setprop persist.vivo.feature.super_performance_support 1
+      else
         run_setprop persist.vivo.feature.super_performance_support ""
       fi
       ;;
@@ -256,7 +321,7 @@ case "$cmd" in
     ;;
   apply_ro)
     ensure_conf
-    for k in refresh_144_custom full_aod game_pro low_latency_audio; do
+    for k in $RO_KEYS; do
       v=$(get_conf "$k")
       if [ "$v" = "1" ]; then
         apply_one_ro "$k" 1

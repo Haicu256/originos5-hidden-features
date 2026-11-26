@@ -12,15 +12,26 @@ done
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-# 2. Check WebUI JavaScript syntax (if node is available)
-if command -v node >/dev/null 2>&1; then
-  python3 - "$MOD/webroot/index.html" "$TMP/webui.js" <<'PY'
+# 2. Check WebUI JavaScript syntax & verify every feature key in index.html matches ALL_KEYS and has loc
+python3 - "$MOD/webroot/index.html" "$MOD/feature_ctl.sh" "$TMP/webui.js" <<'PY'
 import sys, re
 html = open(sys.argv[1]).read()
+ctl = open(sys.argv[2]).read()
 m = re.search(r"<script>(.*?)</script>", html, re.S)
 assert m, "missing <script> block"
-open(sys.argv[2], "w").write(m.group(1))
+js = m.group(1)
+open(sys.argv[3], "w").write(js)
+
+m_keys = re.search(r'^ALL_KEYS="([^"]+)"', ctl, re.M)
+assert m_keys, "missing ALL_KEYS"
+ctl_keys = m_keys.group(1).split()
+ui_keys = re.findall(r'\{\s*key:\s*"([^"]+)"', js)
+ui_locs = re.findall(r'loc:\s*"([^"]+)"', js)
+assert ctl_keys == ui_keys, f"Key mismatch! ctl={ctl_keys} ui={ui_keys}"
+assert len(ui_keys) == 19, f"Expected 19 keys, got {len(ui_keys)}"
+assert len(ui_locs) == 19, f"Expected 19 loc entries, got {len(ui_locs)}"
 PY
+if command -v node >/dev/null 2>&1; then
   node --check "$TMP/webui.js"
 fi
 
@@ -55,7 +66,7 @@ run_ctl() {
   PATH="$TMP/bin:$PATH" O5_CONF_FILE="$TMP/o5.conf" O5_RESETPROP_BIN="$TMP/mock_resetprop" MOCK_LOG="$TMP/ctl.log" sh "$MOD/feature_ctl.sh" "$@"
 }
 
-# Test A: apply initializes all 12 enabled and applies key props
+# Test A: apply initializes all 19 enabled and applies key props
 : > "$TMP/ctl.log"
 run_ctl apply | grep -q "OK:applied"
 grep -q "SETPROP persist.vivo.phone.fps_max=144" "$TMP/ctl.log"
@@ -67,47 +78,78 @@ grep -q "SETPROP persist.vivo.camerap3.support=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.support.appshare=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.feature.super_performance_support=1" "$TMP/ctl.log"
 grep -q "SETPROP persist.vivo.multiwindow_force=true" "$TMP/ctl.log"
+grep -q "RESETPROP ro.vivo.support.airpods=true" "$TMP/ctl.log"
 ! grep -q "usb_wet_charge_limit_support" "$TMP/ctl.log"
 ! grep -q "gamecube.hifi.support" "$TMP/ctl.log"
 grep -q "SETPROP persist.sys.dcdiming.en.vivo=1" "$TMP/ctl.log"
 
-# Test B: disabling refresh_144_custom safely restores fps_max=120 (not empty)
+# Test B: toggling one feature in a former pair leaves its sibling untouched
 : > "$TMP/ctl.log"
-run_ctl set refresh_144_custom 0 | grep -q "OK:refresh_144_custom=0"
-grep -q "SETPROP persist.vivo.phone.fps_max=120" "$TMP/ctl.log"
-grep -q "RESETPROP ro.vivo.user_refresh_rate_mode=false" "$TMP/ctl.log"
+run_ctl set airpods_support 0 | grep -q "OK:airpods_support=0"
+grep -q "RESETPROP ro.vivo.support.airpods=false" "$TMP/ctl.log"
+! grep -q "uselowlatency" "$TMP/ctl.log"
 
-# Test C: status reflects toggled state accurately
+# Test C: disabling fps_144 restores fps_max=120 without touching per_app_hz
+: > "$TMP/ctl.log"
+run_ctl set fps_144 0 | grep -q "OK:fps_144=0"
+grep -q "SETPROP persist.vivo.phone.fps_max=120" "$TMP/ctl.log"
+! grep -q "ro.vivo.user_refresh_rate_mode" "$TMP/ctl.log"
+
+# Test D: status reflects toggled state accurately
 STATUS_OUT=$(run_ctl status)
-echo "$STATUS_OUT" | grep -q "FEAT_refresh_144_custom=0"
-echo "$STATUS_OUT" | grep -q "FEAT_charge_limit=1"
+echo "$STATUS_OUT" | grep -q "FEAT_fps_144=0"
+echo "$STATUS_OUT" | grep -q "FEAT_per_app_hz=1"
+echo "$STATUS_OUT" | grep -q "FEAT_airpods_support=0"
+echo "$STATUS_OUT" | grep -q "FEAT_low_latency_audio=1"
 echo "$STATUS_OUT" | grep -q "DEVICE_MODEL=V2361A"
 
-# Test D: apply_ro respects disabled refresh_144_custom and only applies enabled ro.*
+# Test E: apply_ro respects disabled fps_144 & airpods_support, keeps enabled per_app_hz & full_aod
 : > "$TMP/ctl.log"
 run_ctl apply_ro
-! grep -q "ro.vivo.user_refresh_rate_mode=true" "$TMP/ctl.log"
+! grep -q "ro.surface_flinger.game_default_frame_rate_override=144" "$TMP/ctl.log"
+! grep -q "ro.vivo.support.airpods=true" "$TMP/ctl.log"
+grep -q "RESETPROP ro.vivo.user_refresh_rate_mode=true" "$TMP/ctl.log"
 grep -q "RESETPROP ro.vivo.keyguard_full_aod.enable=1" "$TMP/ctl.log"
 
-# Test E: reset reverts all
+# Test F: migration from v2.0.1 grouped config preserves 0 values and drops legacy keys
+cat > "$TMP/mig.conf" <<'EOF'
+charge_limit=1
+bypass_charge=0
+refresh_144_custom=0
+full_aod=1
+camera_pro=0
+usb_wet_guard=1
+EOF
+MIG_OUT=$(PATH="$TMP/bin:$PATH" O5_CONF_FILE="$TMP/mig.conf" O5_RESETPROP_BIN="$TMP/mock_resetprop" MOCK_LOG="$TMP/mig.log" sh "$MOD/feature_ctl.sh" status)
+echo "$MIG_OUT" | grep -q "FEAT_fps_144=0"
+echo "$MIG_OUT" | grep -q "FEAT_per_app_hz=0"
+echo "$MIG_OUT" | grep -q "FEAT_disable_charge=0"
+echo "$MIG_OUT" | grep -q "FEAT_camera_tws_mic=0"
+echo "$MIG_OUT" | grep -q "FEAT_camera_p3=0"
+echo "$MIG_OUT" | grep -q "FEAT_aod_music=1"
+! grep -q "refresh_144_custom=" "$TMP/mig.conf"
+! grep -q "usb_wet_guard=" "$TMP/mig.conf"
+
+# Test G: reset reverts all
 : > "$TMP/ctl.log"
 run_ctl reset | grep -q "OK:reset"
 grep -q "SETPROP persist.vivo.Lea.tws_recording.enable=false" "$TMP/ctl.log"
 grep -q "SETPROP persist.sys.dcdiming.en.vivo=0" "$TMP/ctl.log"
 grep -q "SETTINGS put secure vivo_integration_aod_enable 0" "$TMP/ctl.log"
+grep -q "SETTINGS put secure aod_show_music_switch 0" "$TMP/ctl.log"
 
-# Test F: invalid key rejected
+# Test H: invalid key rejected
 if run_ctl set bad_key 1 >/dev/null 2>&1; then
   echo "FAIL: invalid key accepted"; exit 1
 fi
 
 # 4. Verify build.sh produces valid flashable ZIP with webroot/index.html
 bash "$ROOT/build.sh" >/dev/null
-ZIP="$ROOT/dist/OriginOS5_Hidden_Features_v2.0.1.zip"
+ZIP="$ROOT/dist/OriginOS5_Hidden_Features_v2.1.0.zip"
 [ -f "$ZIP" ]
 unzip -l "$ZIP" | grep -q "META-INF/com/google/android/update-binary"
 unzip -l "$ZIP" | grep -q "webroot/index.html"
 unzip -l "$ZIP" | grep -q "feature_ctl.sh"
 unzip -l "$ZIP" | grep -q "late-load.sh"
 
-echo "ALL 6 MODULE & WEBUI TESTS PASSED"
+echo "ALL 8 MODULE, MIGRATION & WEBUI TESTS PASSED"

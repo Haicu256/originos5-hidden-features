@@ -13,6 +13,7 @@
     --muted: #93a1b8;
     --accent: #3b82f6;
     --accent-soft: rgba(59,130,246,0.16);
+    --loc-text: #7dd3fc;
     --ok: #22c55e;
     --warn: #f59e0b;
     --danger: #ef4444;
@@ -27,6 +28,7 @@
       --muted: #64748b;
       --accent: #2563eb;
       --accent-soft: rgba(37,99,235,0.10);
+      --loc-text: #0369a1;
       --switch-off: #cbd5e1;
     }
   }
@@ -91,7 +93,8 @@
     background: rgba(245,158,11,0.16); color: var(--warn);
   }
   .row-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .row-prop { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10.5px; color: var(--muted); opacity: 0.8; margin-top: 4px; word-break: break-all; }
+  .row-loc { font-size: 11.5px; color: var(--loc-text); margin-top: 4px; font-weight: 500; }
+  .row-prop { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10.5px; color: var(--muted); opacity: 0.78; margin-top: 3px; word-break: break-all; }
   .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider {
@@ -146,7 +149,7 @@
   <div id="sections"></div>
 
   <div class="note">
-    <strong>Lưu ý:</strong> Các mục gắn nhãn <span class="tag-sr">Soft Reboot</span> dùng thuộc tính <code>ro.*</code> hoặc cần tải lại dịch vụ hệ thống — hãy bấm <strong>Soft Reboot</strong> trong KernelSU Manager sau khi thay đổi để có hiệu lực hoàn toàn. Các mục <code>persist.*</code> có hiệu lực ngay (hoặc sau khi mở lại Cài đặt / Camera / Game Space).
+    <strong>Lưu ý:</strong> Các mục gắn nhãn <span class="tag-sr">Soft Reboot</span> dùng thuộc tính <code>ro.*</code> hoặc cần tải lại dịch vụ hệ thống — hãy bấm <strong>Soft Reboot</strong> trong KernelSU Manager sau khi thay đổi để có hiệu lực hoàn toàn. Các mục còn lại có hiệu lực ngay (hoặc sau khi mở lại Cài đặt / Camera / Game Space).
   </div>
 
   <div class="toast" id="toast"></div>
@@ -160,53 +163,96 @@
       title: "Pin & Sạc thông minh",
       items: [
         { key: "charge_limit", name: "Giới hạn % sạc pin (80–100%)", sr: false,
-          desc: "Mở thanh chọn 80%/85%/90%/95%/100% trong Cài đặt › Pin › Tình trạng pin & Sạc.",
+          desc: "Mở thanh chọn mức dừng sạc 80% / 85% / 90% / 95% / 100% để bảo vệ pin.",
+          loc: "Cài đặt › Pin › Tình trạng pin & Sạc › Giới hạn sạc pin",
           prop: "persist.vivo.charge_capacity_up_limit_support=1" },
-        { key: "bypass_charge", name: "Sạc nhánh toàn cục & Ngắt sạc", sr: false,
-          desc: "Mở hỗ trợ cấp nguồn trực tiếp không qua pin và tùy chọn ngắt sạc.",
-          prop: "persist.vivo.all_bypass_charge_support=1, disable_charge_support=1" }
+        { key: "bypass_charge", name: "Sạc nhánh toàn cục (Bypass Charge)", sr: false,
+          desc: "Cấp nguồn trực tiếp cho máy khi cắm sạc không đi qua pin, giảm nóng khi dùng nặng.",
+          loc: "Thanh bên Game (vuốt cạnh khi chơi) › Sạc nhánh · Cài đặt › Pin › Tình trạng pin & Sạc",
+          prop: "persist.vivo.all_bypass_charge_support=1" },
+        { key: "disable_charge", name: "Ngắt sạc thủ công (Disable Charge)", sr: false,
+          desc: "Mở tùy chọn tạm ngắt dòng sạc vào pin dù vẫn đang cắm cáp.",
+          loc: "Cài đặt › Pin › Tình trạng pin & Sạc (tùy chọn bảo vệ/ngắt sạc)",
+          prop: "persist.vivo.disable_charge_support=1" }
       ]
     },
     {
       title: "Màn hình, 144Hz & AOD",
       items: [
-        { key: "refresh_144_custom", name: "Mở trần 144Hz & Tùy chỉnh Hz từng app", sr: true,
-          desc: "Nâng trần từ 120Hz lên 144Hz thật, gỡ trần FPS game Android 15 và mở menu chọn Hz riêng từng ứng dụng.",
-          prop: "persist.vivo.phone.fps_max=144, ro.vivo.user_refresh_rate_mode=true" },
-        { key: "full_aod", name: "Full / Integration AOD & Nhạc AOD", sr: true,
-          desc: "Mở AOD toàn màn hình liên kết hình nền khóa và công tắc điều khiển nhạc trên AOD.",
+        { key: "fps_144", name: "Mở trần 144Hz & Gỡ giới hạn FPS game", sr: true,
+          desc: "Nâng trần phần cứng từ 120Hz lên 144Hz thật và gỡ giới hạn mặc định 60FPS game trên Android 15.",
+          loc: "Cài đặt › Màn hình & Độ sáng › Tốc độ làm mới màn hình (áp dụng toàn hệ thống & game)",
+          prop: "persist.vivo.phone.fps_max=144, ro.surface_flinger.game_default_frame_rate_override=144" },
+        { key: "per_app_hz", name: "Tùy chỉnh tần số quét (Hz) từng app", sr: true,
+          desc: "Mở danh sách cho phép chọn tốc độ làm mới riêng biệt cho từng ứng dụng.",
+          loc: "Cài đặt › Màn hình & Độ sáng › Tốc độ làm mới màn hình › Tùy chỉnh từng ứng dụng",
+          prop: "ro.vivo.user_refresh_rate_mode=true" },
+        { key: "full_aod", name: "Full / Integration AOD (AOD toàn cảnh)", sr: true,
+          desc: "Mở chế độ AOD toàn màn hình liên kết mượt với hình nền màn hình khóa.",
+          loc: "Cài đặt › Màn hình khóa & Hình nền › Màn hình luôn bật (AOD)",
           prop: "ro.vivo.keyguard_full_aod.enable=1, persist.vivo.phone.smart_aod=1" },
+        { key: "aod_music", name: "Điều khiển nhạc trên AOD", sr: false,
+          desc: "Hiện trình phát nhạc và nút chuyển bài trực tiếp trên màn hình luôn bật.",
+          loc: "Cài đặt › Màn hình khóa & Hình nền › Màn hình luôn bật (AOD) › Trình phát nhạc",
+          prop: "settings secure aod_show_music_switch=1" },
         { key: "dc_dimming", name: "Full DC Dimming (Giảm nhấp nháy)", sr: false,
-          desc: "Bật chế độ chống nháy sáng màn hình AMOLED toàn dải độ sáng.",
+          desc: "Bật chế độ làm mờ DC chống nhấp nháy PWM cho màn hình AMOLED ở độ sáng thấp.",
+          loc: "Cài đặt › Màn hình & Độ sáng › Bảo vệ mắt / Giảm nhấp nháy độ sáng thấp (hoặc Tùy chọn nhà phát triển)",
           prop: "persist.sys.dcdiming.en.vivo=1" },
         { key: "five_level_zoom", name: "5 mức Thu phóng màn hình", sr: false,
-          desc: "Mở 5 nấc kích thước hiển thị (thay vì 3 nấc) trong Cài đặt › Màn hình & Độ sáng.",
+          desc: "Mở 5 nấc kích thước hiển thị (thay vì chỉ 3 nấc mặc định).",
+          loc: "Cài đặt › Màn hình & Độ sáng › Phông chữ & Kích thước hiển thị › Kích thước hiển thị",
           prop: "persist.vivo.support.five_level_screen_zoom=true" }
       ]
     },
     {
       title: "Game Space, Camera & Âm thanh",
       items: [
-        { key: "game_pro", name: "Cảm ứng Game chuyên sâu & Ổn định ảnh", sr: true,
-          desc: "Mở thanh trượt chỉnh độ nhạy vuốt/chạm (node /sys/touchscreen/game_para_adjust) và ổn định khung hình trong Game Space.",
-          prop: "ro.vivo.touch.game_para_adjust=1, picture_stability_opt=true" },
-        { key: "camera_pro", name: "Thu âm mic Bluetooth TWS & Ảnh Display P3", sr: false,
-          desc: "Dùng tai nghe TWS làm mic quay video trong Camera gốc và lưu ảnh dải màu rộng P3.",
-          prop: "persist.vivo.Lea.tws_recording.enable=true, persist.vivo.camerap3.support=1" },
-        { key: "low_latency_audio", name: "Âm thanh độ trễ thấp & Hỗ trợ AirPods", sr: true,
-          desc: "Giảm độ trễ âm thanh hệ thống/game và mở hỗ trợ AirPods trong cài đặt Bluetooth.",
-          prop: "persist.vivo.audio.feature.uselowlatency.enable=true, ro.vivo.support.airpods=true" }
+        { key: "game_touch_pro", name: "Cảm ứng Game chuyên sâu", sr: true,
+          desc: "Mở thanh trượt chỉnh độ nhạy vuốt, độ nhạy chạm liên tục và chống chạm nhầm (node /sys/touchscreen/game_para_adjust).",
+          loc: "Thanh bên Game (vuốt cạnh khi vào game) › Cài đặt cảm ứng",
+          prop: "ro.vivo.touch.game_para_adjust=1" },
+        { key: "game_pic_stability", name: "Ổn định khung hình / ảnh khi chơi game", sr: false,
+          desc: "Kích hoạt tối ưu ổn định khung hình và độ mượt hình ảnh của GameCube.",
+          loc: "Thanh bên Game › Cài đặt hiển thị / Ổn định khung hình",
+          prop: "persist.vivo.support.picture_stability_opt=true" },
+        { key: "camera_tws_mic", name: "Thu âm mic Bluetooth TWS trong Camera", sr: false,
+          desc: "Dùng micro của tai nghe Bluetooth TWS làm nguồn thu âm khi quay video.",
+          loc: "Ứng dụng Camera gốc › Video › Cài đặt (bánh răng) › Ghi âm qua tai nghe Bluetooth",
+          prop: "persist.vivo.Lea.tws_recording.enable=true" },
+        { key: "camera_p3", name: "Chụp ảnh dải màu rộng Display P3", sr: false,
+          desc: "Lưu ảnh với không gian màu rộng Display P3 thay vì sRGB tiêu chuẩn.",
+          loc: "Ứng dụng Camera gốc › Cài đặt (bánh răng) › Lưu ảnh dải màu rộng P3",
+          prop: "persist.vivo.camerap3.support=1" },
+        { key: "low_latency_audio", name: "Âm thanh độ trễ thấp", sr: false,
+          desc: "Kích hoạt đường dẫn xử lý âm thanh độ trễ thấp của hệ thống cho game và tai nghe.",
+          loc: "Tự động áp dụng ở lớp hệ thống (Game / Tai nghe có dây & Bluetooth)",
+          prop: "persist.vivo.audio.feature.uselowlatency.enable=true" },
+        { key: "airpods_support", name: "Hỗ trợ AirPods trong cài đặt Bluetooth", sr: true,
+          desc: "Mở giao diện hỗ trợ kết nối và hiển thị trạng thái AirPods gốc trên OriginOS.",
+          loc: "Cài đặt › Bluetooth & Thiết bị › chạm biểu tượng cài đặt cạnh AirPods khi kết nối",
+          prop: "ro.vivo.support.airpods=true" }
       ]
     },
     {
       title: "Đa nhiệm & Hiệu năng hệ thống",
       items: [
-        { key: "multiwindow_pro", name: "Ép chia đôi mọi app & Hiệu ứng chia đôi", sr: true,
-          desc: "Ép hỗ trợ chia đôi màn hình cho cả app bị chặn, giữ chia đôi khi xoay ngang và bật hiệu ứng chuyển cảnh.",
+        { key: "multiwindow_force", name: "Ép chia đôi mọi app & Giữ khi xoay ngang", sr: true,
+          desc: "Ép hỗ trợ chia đôi cho cả app bị chặn mặc định và không bị thoát chia đôi khi xoay ngang.",
+          loc: "Cài đặt › Lối tắt & Trợ năng › Chia đôi màn hình thông minh (và khi chọn Chia đôi từ Đa nhiệm)",
           prop: "persist.vivo.multiwindow_force=true, multiwindow_rotatevalid=true" },
-        { key: "app_share_extreme", name: "Chia sẻ riêng 1 app & Extreme Performance", sr: false,
-          desc: "Cho phép chiếu riêng 1 app ẩn thông báo riêng tư và mở Extreme Performance Mode trong Tùy chọn nhà phát triển.",
-          prop: "persist.vivo.support.appshare=1, super_performance_support=1" }
+        { key: "multiwindow_anim", name: "Hiệu ứng chuyển cảnh chia đôi", sr: true,
+          desc: "Bật hiệu ứng chuyển mượt khi hoán đổi 2 app chia đôi hoặc kéo sang toàn màn hình.",
+          loc: "Tự động áp dụng khi hoán đổi cửa sổ hoặc kéo chia đôi sang toàn màn hình",
+          prop: "persist.vivo.multiwindow_split_switch_anim=1, splittofull_anim=1" },
+        { key: "app_share", name: "Chia sẻ riêng 1 ứng dụng (App Share)", sr: false,
+          desc: "Cho phép chiếu/ghi riêng cửa sổ 1 app duy nhất và tự ẩn thông báo riêng tư.",
+          loc: "Trung tâm điều khiển › Chiếu màn hình / Ghi màn hình · Cài đặt › Kết nối khác › Phản chiếu thông minh",
+          prop: "persist.vivo.support.appshare=1" },
+        { key: "extreme_perf", name: "Chế độ Extreme Performance Mode", sr: false,
+          desc: "Mở công tắc ưu tiên hiệu năng và xung nhịp tối đa cho hệ thống.",
+          loc: "Cài đặt › Quản lý hệ thống › Tùy chọn nhà phát triển › Chế độ hiệu năng cực đại",
+          prop: "persist.vivo.feature.super_performance_support=1" }
       ]
     }
   ];
@@ -273,12 +319,16 @@
         const desc = document.createElement("div");
         desc.className = "row-desc";
         desc.textContent = item.desc;
+        const loc = document.createElement("div");
+        loc.className = "row-loc";
+        loc.textContent = "Vị trí: " + item.loc;
         const prop = document.createElement("div");
         prop.className = "row-prop";
         prop.textContent = item.prop;
 
         info.appendChild(title);
         info.appendChild(desc);
+        info.appendChild(loc);
         info.appendChild(prop);
 
         const sw = document.createElement("label");
@@ -336,7 +386,7 @@
         else if (k === "LIVE_DC_DIM") dc = v === "1" ? "Bật" : "Tắt";
         else if (k.startsWith("FEAT_")) state[k.slice(5)] = v;
       });
-      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.0.1";
+      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.1.0";
       document.getElementById("pFps").textContent = fps;
       document.getElementById("pChg").textContent = chg;
       document.getElementById("pDc").textContent = dc;
@@ -371,7 +421,7 @@
     try {
       await execRoot("sh " + CTL + " enable_all");
       await refreshStatus(true);
-      showToast("Đã bật toàn bộ 11 nhóm tính năng!");
+      showToast("Đã bật toàn bộ 19 tính năng!");
     } catch (e) {
       showToast("Lỗi: " + e.message);
       setBusy(false);
