@@ -1,6 +1,6 @@
 id=originos5_hidden_features
 name=OriginOS 5 Hidden Features Unlock
-version=v2.1.0
-versionCode=210
+version=v2.2.0
+versionCode=220
 author=Haicu256
-description=Mở khóa 19 tính năng ẩn độc lập 100% có phần cứng hỗ trợ trên OriginOS 5 (Android 15) kèm WebUI bật/tắt riêng từng tính năng và chỉ dẫn vị trí menu: 144Hz, Hz từng app, Cảm ứng Game, Giới hạn % sạc, Sạc nhánh, Full AOD, DC Dimming, 5 mức thu phóng, Camera TWS/P3, AirPods, Chia đôi mọi app, Extreme Mode. Không daemon, không mount /vendor.
+description=Mở khóa 19 tính năng ẩn độc lập 100% có phần cứng hỗ trợ trên OriginOS 5 (Android 15) kèm WebUI bật/tắt riêng từng tính năng, chỉ dẫn vị trí menu và tự động khóa/đồng bộ các mục Game Space khi phát hiện module gamecube_z9(CN). Không daemon, không mount /vendor.

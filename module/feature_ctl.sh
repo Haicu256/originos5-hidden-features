@@ -1,8 +1,10 @@
 #!/system/bin/sh
-# OriginOS 5 Hidden Features Unlock — Single-source-of-truth feature controller (v2.1.0)
-# 19 independent hardware-verified toggles. Works with KernelSU, SukiSU, APatch, Magisk, and KSU WebUI.
+# OriginOS 5 Hidden Features Unlock — Single-source-of-truth feature controller (v2.2.0)
+# 19 independent hardware-verified toggles. Auto-defers touch/picture-stability to gamecube_z9_cn when installed.
 
 CONF="${O5_CONF_FILE:-/data/adb/originos5_hidden_features.conf}"
+GC_MOD_DIR="${O5_GC_MOD_DIR:-/data/adb/modules/gamecube_z9_cn}"
+GC_CONF_FILE="${O5_GC_CONF_FILE:-/data/adb/gamecube_z9.conf}"
 ALL_KEYS="charge_limit bypass_charge disable_charge fps_144 per_app_hz full_aod aod_music dc_dimming five_level_zoom game_touch_pro game_pic_stability camera_tws_mic camera_p3 low_latency_audio airpods_support multiwindow_force multiwindow_anim app_share extreme_perf"
 RO_KEYS="fps_144 per_app_hz full_aod game_touch_pro airpods_support"
 
@@ -36,12 +38,44 @@ run_settings() {
   settings put "$@" 2>/dev/null || true
 }
 
+gc_mod_active() {
+  [ -d "$GC_MOD_DIR" ] && [ ! -f "$GC_MOD_DIR/disable" ] && [ ! -f "$GC_MOD_DIR/remove" ]
+}
+
+gc_get_val() {
+  _gk="$1"
+  _gdef="$2"
+  if [ -f "$GC_CONF_FILE" ]; then
+    _gv2=$(grep "^${_gk}=" "$GC_CONF_FILE" 2>/dev/null | tail -n 1 | cut -d= -f2)
+    if [ "$_gv2" = "0" ] || [ "$_gv2" = "1" ]; then
+      echo "$_gv2"
+      return 0
+    fi
+  fi
+  echo "$_gdef"
+}
+
+is_gc_locked_key() {
+  gc_mod_active || return 1
+  case "$1" in
+    game_touch_pro|game_pic_stability) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+default_val_of() {
+  case "$1" in
+    game_pic_stability) echo "0" ;;
+    *) echo "1" ;;
+  esac
+}
+
 legacy_parent_of() {
   case "$1" in
     disable_charge) echo "bypass_charge" ;;
     fps_144|per_app_hz) echo "refresh_144_custom" ;;
     aod_music) echo "full_aod" ;;
-    game_touch_pro|game_pic_stability) echo "game_pro" ;;
+    game_touch_pro) echo "game_pro" ;;
     camera_tws_mic|camera_p3) echo "camera_pro" ;;
     airpods_support) echo "low_latency_audio" ;;
     multiwindow_force|multiwindow_anim) echo "multiwindow_pro" ;;
@@ -55,13 +89,13 @@ ensure_conf() {
     mkdir -p "$(dirname "$CONF")" 2>/dev/null || true
     : > "$CONF"
     for _ek in $ALL_KEYS; do
-      echo "${_ek}=1" >> "$CONF"
+      echo "${_ek}=$(default_val_of "$_ek")" >> "$CONF"
     done
   else
     _migrated=0
     for _ek in $ALL_KEYS; do
       if ! grep -q "^${_ek}=" "$CONF" 2>/dev/null; then
-        _def="1"
+        _def=$(default_val_of "$_ek")
         _lp=$(legacy_parent_of "$_ek")
         if [ -n "$_lp" ]; then
           _lv=$(grep "^${_lp}=" "$CONF" 2>/dev/null | tail -n 1 | cut -d= -f2)
@@ -82,11 +116,25 @@ ensure_conf() {
 
 get_conf() {
   ensure_conf
+  if gc_mod_active; then
+    case "$1" in
+      game_touch_pro)
+        gc_get_val ENABLE_TOUCH_PRO 1
+        return 0
+        ;;
+      game_pic_stability)
+        gc_get_val ENABLE_PIC_STABILITY 0
+        return 0
+        ;;
+    esac
+  fi
   _gv=$(grep "^${1}=" "$CONF" 2>/dev/null | tail -n 1 | cut -d= -f2)
   if [ "$_gv" = "0" ]; then
     echo "0"
-  else
+  elif [ "$_gv" = "1" ]; then
     echo "1"
+  else
+    default_val_of "$1"
   fi
 }
 
@@ -110,6 +158,7 @@ is_valid_key() {
 apply_one_ro() {
   key="$1"
   val="$2"
+  is_gc_locked_key "$key" && return 0
   case "$key" in
     fps_144)
       if [ "$val" = "1" ]; then
@@ -152,6 +201,7 @@ apply_one_ro() {
 apply_one() {
   key="$1"
   val="$2"
+  is_gc_locked_key "$key" && return 0
   case "$key" in
     charge_limit)
       if [ "$val" = "1" ]; then
@@ -298,6 +348,11 @@ case "$cmd" in
     echo "LIVE_FPS_MAX=$(getprop persist.vivo.phone.fps_max 2>/dev/null || echo '')"
     echo "LIVE_CHARGE_LIMIT=$(getprop persist.vivo.charge_capacity_up_limit_support 2>/dev/null || echo '')"
     echo "LIVE_DC_DIM=$(getprop persist.sys.dcdiming.en.vivo 2>/dev/null || echo '')"
+    if gc_mod_active; then
+      echo "GC_MOD_PRESENT=1"
+    else
+      echo "GC_MOD_PRESENT=0"
+    fi
     for k in $ALL_KEYS; do
       echo "FEAT_${k}=$(get_conf "$k")"
     done
@@ -307,6 +362,10 @@ case "$cmd" in
     val="${3:-}"
     is_valid_key "$key" || { echo "ERR: invalid key $key" >&2; exit 2; }
     [ "$val" = "0" ] || [ "$val" = "1" ] || { echo "ERR: invalid value $val" >&2; exit 2; }
+    if is_gc_locked_key "$key"; then
+      echo "ERR: locked by gamecube_z9(CN)" >&2
+      exit 3
+    fi
     set_conf "$key" "$val"
     apply_one "$key" "$val"
     echo "OK:${key}=${val}"
@@ -314,6 +373,7 @@ case "$cmd" in
   apply)
     ensure_conf
     for k in $ALL_KEYS; do
+      is_gc_locked_key "$k" && continue
       v=$(get_conf "$k")
       apply_one "$k" "$v"
     done
@@ -322,6 +382,7 @@ case "$cmd" in
   apply_ro)
     ensure_conf
     for k in $RO_KEYS; do
+      is_gc_locked_key "$k" && continue
       v=$(get_conf "$k")
       if [ "$v" = "1" ]; then
         apply_one_ro "$k" 1
@@ -330,6 +391,7 @@ case "$cmd" in
     ;;
   enable_all)
     for k in $ALL_KEYS; do
+      is_gc_locked_key "$k" && continue
       set_conf "$k" 1
       apply_one "$k" 1
     done
@@ -337,6 +399,7 @@ case "$cmd" in
     ;;
   reset)
     for k in $ALL_KEYS; do
+      is_gc_locked_key "$k" && continue
       set_conf "$k" 0
       apply_one "$k" 0
     done

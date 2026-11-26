@@ -16,6 +16,7 @@
     --loc-text: #7dd3fc;
     --ok: #22c55e;
     --warn: #f59e0b;
+    --lock: #fb923c;
     --danger: #ef4444;
     --switch-off: #2c3547;
   }
@@ -29,6 +30,7 @@
       --accent: #2563eb;
       --accent-soft: rgba(37,99,235,0.10);
       --loc-text: #0369a1;
+      --lock: #c2410c;
       --switch-off: #cbd5e1;
     }
   }
@@ -92,8 +94,13 @@
     font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px;
     background: rgba(245,158,11,0.16); color: var(--warn);
   }
+  .tag-lock {
+    font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px;
+    background: rgba(251,146,60,0.16); color: var(--lock);
+  }
   .row-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
   .row-loc { font-size: 11.5px; color: var(--loc-text); margin-top: 4px; font-weight: 500; }
+  .row-lock { font-size: 11.5px; color: var(--lock); margin-top: 4px; font-weight: 500; }
   .row-prop { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10.5px; color: var(--muted); opacity: 0.78; margin-top: 3px; word-break: break-all; }
   .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
@@ -149,7 +156,7 @@
   <div id="sections"></div>
 
   <div class="note">
-    <strong>Lưu ý:</strong> Các mục gắn nhãn <span class="tag-sr">Soft Reboot</span> dùng thuộc tính <code>ro.*</code> hoặc cần tải lại dịch vụ hệ thống — hãy bấm <strong>Soft Reboot</strong> trong KernelSU Manager sau khi thay đổi để có hiệu lực hoàn toàn. Các mục còn lại có hiệu lực ngay (hoặc sau khi mở lại Cài đặt / Camera / Game Space).
+    <strong>Lưu ý:</strong> Các mục gắn nhãn <span class="tag-sr">Soft Reboot</span> dùng thuộc tính <code>ro.*</code> hoặc cần tải lại dịch vụ hệ thống — hãy bấm <strong>Soft Reboot</strong> trong KernelSU Manager sau khi thay đổi để có hiệu lực hoàn toàn. Các mục gắn nhãn <span class="tag-lock">Theo gamecube_z9(CN)</span> tự động khóa và đồng bộ theo WebUI của module <code>gamecube_z9(CN)</code>.
   </div>
 
   <div class="toast" id="toast"></div>
@@ -208,13 +215,13 @@
     {
       title: "Game Space, Camera & Âm thanh",
       items: [
-        { key: "game_touch_pro", name: "Cảm ứng Game chuyên sâu", sr: true,
-          desc: "Mở thanh trượt chỉnh độ nhạy vuốt, độ nhạy chạm liên tục và chống chạm nhầm (node /sys/touchscreen/game_para_adjust).",
-          loc: "Thanh bên Game (vuốt cạnh khi vào game) › Cài đặt cảm ứng",
+        { key: "game_touch_pro", name: "Cảm ứng Game chuyên sâu", sr: true, gcManaged: true,
+          desc: "Mở thanh trượt chỉnh độ nhạy vuốt, độ bám tay và độ chính xác chạm (node /sys/touchscreen/game_para_adjust). Lưu ý: phải thêm ID game vào danh sách hỗ trợ (game_dimen) thì mới hiện trong thanh bên / Cài đặt điều khiển.",
+          loc: "Cài đặt › Chế độ siêu trò chơi › Cài đặt điều khiển (tab Điều chỉnh điều khiển cảm ứng)",
           prop: "ro.vivo.touch.game_para_adjust=1" },
-        { key: "game_pic_stability", name: "Ổn định khung hình / ảnh khi chơi game", sr: false,
-          desc: "Kích hoạt tối ưu ổn định khung hình và độ mượt hình ảnh của GameCube.",
-          loc: "Thanh bên Game › Cài đặt hiển thị / Ổn định khung hình",
+        { key: "game_pic_stability", name: "Ổn định khung hình / ảnh khi chơi game", sr: false, gcManaged: true,
+          desc: "Mặc định TẮT: mở công tắc tắt bộ lọc đồ họa VSR/VAA/MEMC chống lỗi hình trong game. Lưu ý: phải thêm ID game vào danh sách hỗ trợ (picture_stability_opt_whitelist_apps) thì mới hiện trong thanh bên / trang *#*#669#*#*.",
+          loc: "Mở ứng dụng Điện thoại bấm *#*#669#*#* (Tắt các tính năng hiển thị trong trò chơi)",
           prop: "persist.vivo.support.picture_stability_opt=true" },
         { key: "camera_tws_mic", name: "Thu âm mic Bluetooth TWS trong Camera", sr: false,
           desc: "Dùng micro của tai nghe Bluetooth TWS làm nguồn thu âm khi quay video.",
@@ -250,7 +257,7 @@
           loc: "Trung tâm điều khiển › Chiếu màn hình / Ghi màn hình · Cài đặt › Kết nối khác › Phản chiếu thông minh",
           prop: "persist.vivo.support.appshare=1" },
         { key: "extreme_perf", name: "Chế độ Extreme Performance Mode", sr: false,
-          desc: "Mở công tắc ưu tiên hiệu năng và xung nhịp tối đa cho hệ thống.",
+          desc: "Mở công tắc nới lỏng giới hạn FPS game của GameWatch (power_save_type_performance=1).",
           loc: "Cài đặt › Quản lý hệ thống › Tùy chọn nhà phát triển › Chế độ hiệu năng cực đại",
           prop: "persist.vivo.feature.super_performance_support=1" }
       ]
@@ -259,6 +266,7 @@
 
   let cbSeq = 0;
   let busy = false;
+  let gcPresent = false;
   const state = {};
 
   function showToast(msg) {
@@ -290,6 +298,10 @@
     });
   }
 
+  function isLocked(item) {
+    return !!(gcPresent && item.gcManaged);
+  }
+
   function renderUI() {
     const container = document.getElementById("sections");
     container.innerHTML = "";
@@ -302,6 +314,7 @@
       const card = document.createElement("div");
       card.className = "card";
       g.items.forEach((item) => {
+        const locked = isLocked(item);
         const row = document.createElement("div");
         row.className = "row";
 
@@ -310,7 +323,12 @@
         const title = document.createElement("div");
         title.className = "row-title";
         title.textContent = item.name;
-        if (item.sr) {
+        if (locked) {
+          const ltag = document.createElement("span");
+          ltag.className = "tag-lock";
+          ltag.textContent = "Theo gamecube_z9(CN)";
+          title.appendChild(ltag);
+        } else if (item.sr) {
           const tag = document.createElement("span");
           tag.className = "tag-sr";
           tag.textContent = "Soft Reboot";
@@ -322,13 +340,21 @@
         const loc = document.createElement("div");
         loc.className = "row-loc";
         loc.textContent = "Vị trí: " + item.loc;
-        const prop = document.createElement("div");
-        prop.className = "row-prop";
-        prop.textContent = item.prop;
 
         info.appendChild(title);
         info.appendChild(desc);
         info.appendChild(loc);
+
+        if (locked) {
+          const lockMsg = document.createElement("div");
+          lockMsg.className = "row-lock";
+          lockMsg.textContent = "Khóa nút gạt do cài module gamecube_z9(CN) — tự động tuân theo cài đặt trong WebUI gamecube_z9(CN).";
+          info.appendChild(lockMsg);
+        }
+
+        const prop = document.createElement("div");
+        prop.className = "row-prop";
+        prop.textContent = item.prop;
         info.appendChild(prop);
 
         const sw = document.createElement("label");
@@ -336,8 +362,9 @@
         const inp = document.createElement("input");
         inp.type = "checkbox";
         inp.id = "sw_" + item.key;
+        inp.dataset.locked = locked ? "1" : "0";
         inp.checked = state[item.key] === "1";
-        inp.disabled = busy;
+        inp.disabled = busy || locked;
         inp.addEventListener("change", () => onToggle(item, inp));
         const sl = document.createElement("span");
         sl.className = "slider";
@@ -364,8 +391,11 @@
 
   function setBusy(v) {
     busy = v;
-    document.querySelectorAll("input[type=checkbox], .btn").forEach((el) => {
+    document.querySelectorAll(".btn").forEach((el) => {
       el.disabled = v;
+    });
+    document.querySelectorAll("input[type=checkbox]").forEach((el) => {
+      el.disabled = v || el.dataset.locked === "1";
     });
   }
 
@@ -374,6 +404,7 @@
     try {
       const out = await execRoot("sh " + CTL + " status");
       let model = "", os = "", fps = "-", chg = "-", dc = "-";
+      gcPresent = false;
       out.split(/\r?\n/).forEach((line) => {
         const idx = line.indexOf("=");
         if (idx <= 0) return;
@@ -384,9 +415,12 @@
         else if (k === "LIVE_FPS_MAX") fps = v ? (v + "Hz") : "-";
         else if (k === "LIVE_CHARGE_LIMIT") chg = v === "1" ? "Bật" : "Tắt";
         else if (k === "LIVE_DC_DIM") dc = v === "1" ? "Bật" : "Tắt";
+        else if (k === "GC_MOD_PRESENT") gcPresent = (v === "1");
         else if (k.startsWith("FEAT_")) state[k.slice(5)] = v;
       });
-      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.1.0";
+      document.getElementById("subInfo").textContent =
+        (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.2.0" +
+        (gcPresent ? " · Đồng bộ gamecube_z9(CN)" : "");
       document.getElementById("pFps").textContent = fps;
       document.getElementById("pChg").textContent = chg;
       document.getElementById("pDc").textContent = dc;
@@ -402,6 +436,11 @@
   }
 
   async function onToggle(item, inp) {
+    if (isLocked(item)) {
+      inp.checked = state[item.key] === "1";
+      showToast("Đã khóa do cài module gamecube_z9(CN)");
+      return;
+    }
     const val = inp.checked ? "1" : "0";
     setBusy(true);
     try {
@@ -421,7 +460,7 @@
     try {
       await execRoot("sh " + CTL + " enable_all");
       await refreshStatus(true);
-      showToast("Đã bật toàn bộ 19 tính năng!");
+      showToast(gcPresent ? "Đã bật các tính năng khả dụng (giữ nguyên mục theo gamecube_z9)" : "Đã bật toàn bộ 19 tính năng!");
     } catch (e) {
       showToast("Lỗi: " + e.message);
       setBusy(false);
