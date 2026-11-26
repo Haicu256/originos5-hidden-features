@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OriginOS 5 Hidden Features</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --card: #151a24;
+    --card-border: rgba(255,255,255,0.08);
+    --text: #eef2f8;
+    --muted: #93a1b8;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59,130,246,0.16);
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --switch-off: #2c3547;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --card-border: rgba(15,23,42,0.08);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: rgba(37,99,235,0.10);
+      --switch-off: #cbd5e1;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    padding: 16px 14px 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+  }
+  .hero {
+    background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(14,165,233,0.12));
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .hero h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
+  .hero p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .badge {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); white-space: nowrap;
+  }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .pill {
+    font-size: 11px; padding: 4px 9px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--card-border); color: var(--muted);
+  }
+  .pill strong { color: var(--text); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .btn {
+    border: 1px solid var(--card-border); background: var(--card); color: var(--text);
+    border-radius: 14px; padding: 10px 8px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn.danger { color: var(--danger); }
+  .section-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); margin: 16px 4px 8px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .row:last-child { border-bottom: none; }
+  .row-info { flex: 1; min-width: 0; }
+  .row-title { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tag-sr {
+    font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px;
+    background: rgba(245,158,11,0.16); color: var(--warn);
+  }
+  .row-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .row-prop { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10.5px; color: var(--muted); opacity: 0.8; margin-top: 4px; word-break: break-all; }
+  .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--switch-off); transition: background 0.2s; cursor: pointer;
+  }
+  .slider::before {
+    content: ""; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px;
+    border-radius: 50%; background: #fff; transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .switch input:disabled + .slider { opacity: 0.45; cursor: not-allowed; }
+  .note {
+    margin-top: 16px; padding: 12px 14px; border-radius: 14px;
+    background: var(--card); border: 1px solid var(--card-border);
+    font-size: 12px; color: var(--muted);
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px);
+    background: #1e293b; color: #f8fafc; padding: 10px 16px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s; box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    max-width: 90vw; text-align: center; z-index: 99;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <h1>OriginOS 5 Hidden Features</h1>
+        <p id="subInfo">Đang đọc trạng thái thiết bị...</p>
+      </div>
+      <span class="badge" id="countBadge">...</span>
+    </div>
+    <div class="pills">
+      <span class="pill">FPS trần: <strong id="pFps">-</strong></span>
+      <span class="pill">Giới hạn sạc: <strong id="pChg">-</strong></span>
+      <span class="pill">DC Dimming: <strong id="pDc">-</strong></span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="btnEnableAll">Bật tất cả</button>
+    <button class="btn" id="btnRefresh">Làm mới</button>
+    <button class="btn danger" id="btnReset">Về gốc</button>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="note">
+    <strong>Lưu ý:</strong> Các mục gắn nhãn <span class="tag-sr">Soft Reboot</span> dùng thuộc tính <code>ro.*</code> hoặc cần tải lại dịch vụ hệ thống — hãy bấm <strong>Soft Reboot</strong> trong KernelSU Manager sau khi thay đổi để có hiệu lực hoàn toàn. Các mục <code>persist.*</code> có hiệu lực ngay (hoặc sau khi mở lại Cài đặt / Camera / Game Space).
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const CTL = "/data/adb/modules/originos5_hidden_features/feature_ctl.sh";
+
+  const GROUPS = [
+    {
+      title: "Pin & Sạc thông minh",
+      items: [
+        { key: "charge_limit", name: "Giới hạn % sạc pin (80–100%)", sr: false,
+          desc: "Mở thanh chọn 80%/85%/90%/95%/100% trong Cài đặt › Pin › Tình trạng pin & Sạc.",
+          prop: "persist.vivo.charge_capacity_up_limit_support=1" },
+        { key: "bypass_charge", name: "Sạc nhánh toàn cục & Ngắt sạc", sr: false,
+          desc: "Mở hỗ trợ cấp nguồn trực tiếp không qua pin và tùy chọn ngắt sạc.",
+          prop: "persist.vivo.all_bypass_charge_support=1, disable_charge_support=1" },
+        { key: "usb_wet_guard", name: "Cảnh báo bảo vệ cổng USB ẩm", sr: false,
+          desc: "Kích hoạt dịch vụ cảnh báo và giới hạn sạc khi phát hiện cổng sạc ẩm.",
+          prop: "persist.vivo.usb_wet_charge_limit_support=1" }
+      ]
+    },
+    {
+      title: "Màn hình, 144Hz & AOD",
+      items: [
+        { key: "refresh_144_custom", name: "Mở trần 144Hz & Tùy chỉnh Hz từng app", sr: true,
+          desc: "Nâng trần từ 120Hz lên 144Hz thật, gỡ trần FPS game Android 15 và mở menu chọn Hz riêng từng ứng dụng.",
+          prop: "persist.vivo.phone.fps_max=144, ro.vivo.user_refresh_rate_mode=true" },
+        { key: "full_aod", name: "Full / Integration AOD & Nhạc AOD", sr: true,
+          desc: "Mở AOD toàn màn hình liên kết hình nền khóa và công tắc điều khiển nhạc trên AOD.",
+          prop: "ro.vivo.keyguard_full_aod.enable=1, persist.vivo.phone.smart_aod=1" },
+        { key: "dc_dimming", name: "Full DC Dimming (Giảm nhấp nháy)", sr: false,
+          desc: "Bật chế độ chống nháy sáng màn hình AMOLED toàn dải độ sáng.",
+          prop: "persist.sys.dcdiming.en.vivo=1" },
+        { key: "five_level_zoom", name: "5 mức Thu phóng màn hình", sr: false,
+          desc: "Mở 5 nấc kích thước hiển thị (thay vì 3 nấc) trong Cài đặt › Màn hình & Độ sáng.",
+          prop: "persist.vivo.support.five_level_screen_zoom=true" }
+      ]
+    },
+    {
+      title: "Game Space, Camera & Âm thanh",
+      items: [
+        { key: "game_pro", name: "Cảm ứng Game chuyên sâu, Ổn định ảnh & Hi-Fi", sr: true,
+          desc: "Mở thanh trượt chỉnh độ nhạy vuốt/chạm (node /sys/touchscreen/game_para_adjust), ổn định khung hình và Game Hi-Fi.",
+          prop: "ro.vivo.touch.game_para_adjust=1, picture_stability_opt=true, gamecube.hifi=1" },
+        { key: "camera_pro", name: "Thu âm mic Bluetooth TWS & Ảnh Display P3", sr: false,
+          desc: "Dùng tai nghe TWS làm mic quay video trong Camera gốc và lưu ảnh dải màu rộng P3.",
+          prop: "persist.vivo.Lea.tws_recording.enable=true, persist.vivo.camerap3.support=1" },
+        { key: "low_latency_audio", name: "Âm thanh độ trễ thấp & Hỗ trợ AirPods", sr: true,
+          desc: "Giảm độ trễ âm thanh hệ thống/game và mở hỗ trợ AirPods trong cài đặt Bluetooth.",
+          prop: "persist.vivo.audio.feature.uselowlatency.enable=true, ro.vivo.support.airpods=true" }
+      ]
+    },
+    {
+      title: "Đa nhiệm & Hiệu năng hệ thống",
+      items: [
+        { key: "multiwindow_pro", name: "Ép chia đôi mọi app & Hiệu ứng chia đôi", sr: true,
+          desc: "Ép hỗ trợ chia đôi màn hình cho cả app bị chặn, giữ chia đôi khi xoay ngang và bật hiệu ứng chuyển cảnh.",
+          prop: "persist.vivo.multiwindow_force=true, multiwindow_rotatevalid=true" },
+        { key: "app_share_extreme", name: "Chia sẻ riêng 1 app & Extreme Performance", sr: false,
+          desc: "Cho phép chiếu riêng 1 app ẩn thông báo riêng tư và mở Extreme Performance Mode trong Tùy chọn nhà phát triển.",
+          prop: "persist.vivo.support.appshare=1, super_performance_support=1" }
+      ]
+    }
+  ];
+
+  let cbSeq = 0;
+  let busy = false;
+  const state = {};
+
+  function showToast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  function execRoot(cmd) {
+    return new Promise((resolve, reject) => {
+      if (typeof window.ksu === "undefined" || typeof window.ksu.exec !== "function") {
+        reject(new Error("Chỉ chạy trong WebUI của KernelSU / SukiSU / APatch / MMRL"));
+        return;
+      }
+      const cbName = "__o5cb_" + (++cbSeq) + "_" + Date.now();
+      window[cbName] = function (errno, stdout, stderr) {
+        delete window[cbName];
+        if (errno === 0) resolve(stdout || "");
+        else reject(new Error((stderr || stdout || ("Exit " + errno)).trim()));
+      };
+      try {
+        window.ksu.exec(cmd, "{}", cbName);
+      } catch (e) {
+        delete window[cbName];
+        reject(e);
+      }
+    });
+  }
+
+  function renderUI() {
+    const container = document.getElementById("sections");
+    container.innerHTML = "";
+    GROUPS.forEach((g) => {
+      const h = document.createElement("div");
+      h.className = "section-title";
+      h.textContent = g.title;
+      container.appendChild(h);
+
+      const card = document.createElement("div");
+      card.className = "card";
+      g.items.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const info = document.createElement("div");
+        info.className = "row-info";
+        const title = document.createElement("div");
+        title.className = "row-title";
+        title.textContent = item.name;
+        if (item.sr) {
+          const tag = document.createElement("span");
+          tag.className = "tag-sr";
+          tag.textContent = "Soft Reboot";
+          title.appendChild(tag);
+        }
+        const desc = document.createElement("div");
+        desc.className = "row-desc";
+        desc.textContent = item.desc;
+        const prop = document.createElement("div");
+        prop.className = "row-prop";
+        prop.textContent = item.prop;
+
+        info.appendChild(title);
+        info.appendChild(desc);
+        info.appendChild(prop);
+
+        const sw = document.createElement("label");
+        sw.className = "switch";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.id = "sw_" + item.key;
+        inp.checked = state[item.key] === "1";
+        inp.disabled = busy;
+        inp.addEventListener("change", () => onToggle(item, inp));
+        const sl = document.createElement("span");
+        sl.className = "slider";
+        sw.appendChild(inp);
+        sw.appendChild(sl);
+
+        row.appendChild(info);
+        row.appendChild(sw);
+        card.appendChild(row);
+      });
+      container.appendChild(card);
+    });
+    updateCount();
+  }
+
+  function updateCount() {
+    let on = 0, total = 0;
+    GROUPS.forEach((g) => g.items.forEach((i) => {
+      total++;
+      if (state[i.key] === "1") on++;
+    }));
+    document.getElementById("countBadge").textContent = on + "/" + total + " đang bật";
+  }
+
+  function setBusy(v) {
+    busy = v;
+    document.querySelectorAll("input[type=checkbox], .btn").forEach((el) => {
+      el.disabled = v;
+    });
+  }
+
+  async function refreshStatus(silent) {
+    setBusy(true);
+    try {
+      const out = await execRoot("sh " + CTL + " status");
+      let model = "", os = "", fps = "-", chg = "-", dc = "-";
+      out.split(/\r?\n/).forEach((line) => {
+        const idx = line.indexOf("=");
+        if (idx <= 0) return;
+        const k = line.slice(0, idx).trim();
+        const v = line.slice(idx + 1).trim();
+        if (k === "DEVICE_MODEL") model = v;
+        else if (k === "OS_DISPLAY") os = v;
+        else if (k === "LIVE_FPS_MAX") fps = v ? (v + "Hz") : "-";
+        else if (k === "LIVE_CHARGE_LIMIT") chg = v === "1" ? "Bật" : "Tắt";
+        else if (k === "LIVE_DC_DIM") dc = v === "1" ? "Bật" : "Tắt";
+        else if (k.startsWith("FEAT_")) state[k.slice(5)] = v;
+      });
+      document.getElementById("subInfo").textContent = (model || "vivo/iQOO") + " · " + (os || "OriginOS 5") + " · v2.0";
+      document.getElementById("pFps").textContent = fps;
+      document.getElementById("pChg").textContent = chg;
+      document.getElementById("pDc").textContent = dc;
+      renderUI();
+      if (!silent) showToast("Đã cập nhật trạng thái");
+    } catch (e) {
+      document.getElementById("subInfo").textContent = e.message;
+      renderUI();
+      showToast(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onToggle(item, inp) {
+    const val = inp.checked ? "1" : "0";
+    setBusy(true);
+    try {
+      await execRoot("sh " + CTL + " set " + item.key + " " + val);
+      state[item.key] = val;
+      await refreshStatus(true);
+      showToast((val === "1" ? "Đã bật: " : "Đã tắt: ") + item.name + (item.sr ? " (Soft Reboot để ăn đủ)" : ""));
+    } catch (e) {
+      inp.checked = !inp.checked;
+      showToast("Lỗi: " + e.message);
+      setBusy(false);
+    }
+  }
+
+  document.getElementById("btnEnableAll").addEventListener("click", async () => {
+    setBusy(true);
+    try {
+      await execRoot("sh " + CTL + " enable_all");
+      await refreshStatus(true);
+      showToast("Đã bật toàn bộ 12 nhóm tính năng!");
+    } catch (e) {
+      showToast("Lỗi: " + e.message);
+      setBusy(false);
+    }
+  });
+
+  document.getElementById("btnReset").addEventListener("click", async () => {
+    setBusy(true);
+    try {
+      await execRoot("sh " + CTL + " reset");
+      await refreshStatus(true);
+      showToast("Đã tắt toàn bộ tính năng về mặc định gốc");
+    } catch (e) {
+      showToast("Lỗi: " + e.message);
+      setBusy(false);
+    }
+  });
+
+  document.getElementById("btnRefresh").addEventListener("click", () => refreshStatus(false));
+
+  renderUI();
+  refreshStatus(true);
+})();
+</script>
+</body>
+</html>
